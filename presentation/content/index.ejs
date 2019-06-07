@@ -1,0 +1,551 @@
+<section>
+  <h1>Lock, Stock and Hooks</h1>
+  <h3>The tale about React Future</h3>
+
+  <small>
+    Yevhen Shemet<br />
+    github: <a target="_blank" href="https://github.com/yevhene/present-react-hhoks">yevhene/present-react-hooks</a>
+  </small>
+</section>
+
+<section>
+  <h2>React</h2>
+
+  <section>
+    <h3>Two directions of development</h3>
+
+    <ul>
+      <li>Local Resources</li>
+      <li>Network Resources</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>React 16</h3>
+  </section>
+</section>
+
+<section>
+  <h2>Local Resources</h2>
+
+  <section>
+    <h3>Problem: One thread</h3>
+
+    <h4>Solution: Fiber - new Reconciliation algorithm</h4>
+  </section>
+
+  <section>
+    <img src="images/perf-not-fiber.png" />
+    <small>Not Fiber</small>
+
+    <img src="images/perf-fiber.png" />
+    <small>Fiber</small>
+  </section>
+</section>
+
+<section>
+  <h2>Network Resources</h2>
+
+  <section>
+    <ul>
+      <li>Data</li>
+      <li>Assets</li>
+      <li>Code</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>React Suspense</h3>
+
+    <h4>Uniform approach</h3>
+  </section>
+
+  <section>
+    <h2>Demo: suspense</h2>
+
+    <ul>
+      <li>Loading cascades</li>
+    </ul>
+  </section>
+</section>
+
+<section>
+  <h2>React Suspense</h2>
+
+  <section>
+    <h3>Suspense</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const Loading = ({
+  fallback = (<div className="spinner"></div>),
+  children
+}) =&gt; (
+  &lt;Suspense fallback={fallback}&gt;
+    &lt;Content /&gt;
+  &lt;/Suspense&gt;
+);
+    </code></pre>
+  </section>
+
+  <section>
+    <h2>Demo: suspense</h2>
+  </section>
+
+  <section>
+    <h3>How it works?</h3>
+
+    <img src="images/suspense-mechanism.png" />
+  </section>
+
+  <section>
+    <h3>Suspense (Homebrew)</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+class Suspense extends Component {
+  state = { isReady: true }
+
+  componentDidCatch(e) {
+    if (!(e instanceof Promise)) throw e;
+    this.setState(() =&gt; ({ isReady: false }));
+    e.then(() =&gt; this.setState(() =&gt; ({ isReady: true })));
+  }
+
+  render() {
+    if (!this.state.isReady) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>React Implementation</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+export const REACT_SUSPENSE_TYPE = hasSymbol
+  ? Symbol.for('react.suspense')
+  : 0xead1;
+    </code></pre>
+
+    <p>react/packages/shared/ReactSymbols.js</p>
+  </section>
+</section>
+
+<section>
+  <h2>react-cache</h2>
+
+  <section>
+    <h4>Uniform Data/Assets/Code cache</h3>
+  </section>
+
+  <section>
+    <h3>read</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+import { createResource } from 'react-cache';
+
+export const studentFetcher = createResource(
+  (id) =&gt; fetch(`http://localhost:3000/students/${id}`)
+);
+    </code></pre>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const student = studentFetcher.read(id)
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>preload</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+studentFetcher.preload(cache, id)
+
+// ...Later...
+const student = studentFetcher.read(id)
+    </code></pre>
+  </section>
+
+  <section>
+    <h2>React.lazy</h2>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const OtherComponent = React.lazy(() =&gt;
+  import('./OtherComponent')
+);
+    </code></pre>
+  </section>
+</section>
+
+<section>
+  <h2>Avoid Unnecessary Loading States</h2>
+
+  <section>
+    <h2>Demo: suspense</h2>
+
+    <div>
+      <i>Loader maxDuration</i>
+    </div>
+  </section>
+
+  <section>
+    <h3>maxDuration</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+      &lt;Suspense
+        maxDuration={1000}
+        fallback={&lt;Spinner /&gt;}
+      &gt;
+        &lt;Content /&gt;
+      &lt;/Suspense&gt;
+    </code></pre>
+  </section>
+
+  <section>
+    <ul>
+      <li>start rendering before have data</li>
+      <li>pause rendering till data is ready</li>
+      <li>+ on fast network delay dom mutations until entire tree is complete</li>
+      <li>- on slow network control load</li>
+    </ul>
+  </section>
+</section>
+
+<section>
+  <h2>Server Side Rendering</h2>
+
+  <section>
+    <pre><code class="javascript" data-trim contenteditable>
+import { renderToNodeStream } from 'react-dom';
+
+app.get('/', (req, res) =&gt; {
+  const stream = renderToNodeStream(&lt;App /&gt;);
+  stream.pipe(res);
+  stream.on('finish', () =&gt; {
+    res.end();
+  });
+});
+    </code></pre>
+  </section>
+</section>
+
+<section>
+  <h2>Issue</h2>
+  <h3>Works bad with class components</h3>
+
+  <pre><code class="javascript" data-trim contenteditable>
+class MyComponent extends Component {
+  componentDidMount() {
+    fetchUsers().then((users) =&gt; {
+      this.setState({ users });
+      sideEffects(users);
+    })
+  }
+
+  render() {
+    return (&lt;Users users={this.state.users} /&gt;);
+  }
+}
+  </code></pre>
+</section>
+
+<section>
+  <h2>Solution</h2>
+  <h3>Hooks</h3>
+
+  <pre><code class="javascript" data-trim contenteditable>
+function MyComponent() {
+  const users = usersFetcher.read();
+
+  useEffect(() =&gt; sideEffects(users));
+
+  return (&lt;Users users={this.state.users} /&gt;);
+}
+  </code></pre>
+</section>
+
+<section>
+  <h2>Hooks</h2>
+
+  <section>
+    <h3>useState</h3>
+    <pre><code class="javascript" data-trim contenteditable>
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;button onClick={setCount(count + 1)}&gt;
+      {count}
+    &lt;/button&gt;
+  );
+}
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useEffect</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() =&gt; notify(count), [count]);
+
+  return (
+    &lt;button onClick={setCount(count + 1)}&gt;
+      {count}
+    &lt;/button&gt;
+  );
+}
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useContext</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const SessionContext = React.createContext(null);
+
+function App() {
+  <SessionContext.Provider value={currentUser}>
+    <Content />
+  </SessionContext.Provider>
+}
+
+function Content() {
+  const auth = useContext(SessionContext);
+  // DO STUFF
+}
+    </code></pre>
+  </section>
+</section>
+
+<section>
+  <h2>Hooks Rules</h2>
+
+  <section>
+    <ul>
+      <li>Only call hooks at the top level. Don't call hooks inside loops, conditions, or nested functions.</li>
+      <li>Only call hooks from React function components. Don't call hooks from regular JavaScript functions. (There is just one other valid place to call hooks — your own custom hooks.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Rules violation</h3>
+    <h3>Demo: switch</h3>
+  </section>
+
+  <section>
+    <h3>Example</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+function Form() {
+  // 1. Use the name state variable
+  const [name, setName] = useState('Loading...');
+
+  // 2. Use an effect for fetching name
+  useEffect(() =&gt; {
+    fetchName().then(name =&gt; setName(name))
+  }, []);
+}
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Explanation</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+// ------------
+// First render
+// ------------
+// 1. Initialize the name state variable with 'Loading...'
+useState('Loading...')
+// 2. Fetch
+useEffect(fn, [])
+    </code></pre>
+    <pre><code class="javascript" data-trim contenteditable>
+// -------------
+// Second render
+// -------------
+// 1. Read the name state variable (argument is ignored)
+useState('Loading...')
+// 2. Ignore the effect because of []
+useEffect(fn, [])
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>ESLint</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+npm install eslint-plugin-react-hooks --save-dev
+    </code></pre>
+    <pre><code class="javascript" data-trim contenteditable>
+{
+  "plugins": [
+    // ...
+    "react-hooks"
+  ],
+  "rules": {
+    // ...
+    // Checks rules of Hooks
+    "react-hooks/rules-of-hooks": "error",
+    // Checks effect dependencies
+    "react-hooks/exhaustive-deps": "warn"
+  }
+}
+    </code></pre>
+  </section>
+</section>
+
+<section>
+  <h2>Custom Hooks</h2>
+
+  <pre><code class="javascript" data-trim contenteditable>
+function useAuth(credentials) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() =&gt;
+    authorize(credentials).then(user =&gt; setUser(user))
+  );
+
+  return user;
+}
+  </code></pre>
+
+  <pre><code class="javascript" data-trim contenteditable>
+function Profile({ credentials }) {
+  const user = useAuth(credentials);
+  // RENDER STUFF
+}
+  </code></pre>
+</section>
+
+<section>
+  <h2>Additional Hooks</h2>
+
+  <section>
+    <h3>useReducer</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+function init(initialCount) {
+  return { count: initialCount };
+}
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return { count: state.count + 1 };
+    case 'decrement':
+      return { count: state.count - 1 };
+    default:
+      throw new Error();
+  }
+}
+
+function Counter({ initialCount }) {
+  const [state, dispatch] = useReducer(reducer, initialCount, init);
+  return (
+    &lt;div&gt;
+      &lt;button onClick={() =&gt; dispatch({ type: 'increment' })}&gt;+&lt;/button&gt;
+      {state.count}
+      &lt;button onClick={() =&gt; dispatch({ type: 'decrement' })}&gt;-&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useCallback</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const handleClick = useCallback(
+  () =&gt; doSomething(a, b),
+  [a, b],
+);
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useMemo</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const calculateYourMomsWeight = useMemo(
+  () =&gt; compute(a, b),
+  [a, b]
+);
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useRef</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+const hateThisJqueryPluginRef = useRef();
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useImperativeHandle</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+function FancyInput(props, ref) {
+  const inputRef = useRef();
+  useImperativeHandle(ref, () =&gt; ({
+    focus: () =&gt; {
+      inputRef.current.focus();
+    }
+  }));
+  return &lt;input ref={inputRef} ... /&gt;;
+}
+FancyInput = forwardRef(FancyInput);
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>useLayoutEffect</h3>
+
+    <p>Same us useEffect but runs synchronously after all DOM mutations</p>
+  </section>
+
+  <section>
+    <h3>useDebugValue</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+function useFriendStatus(friendID) {
+  const [isOnline, setIsOnline] = useState(null);
+
+  // Show a label in DevTools next to this Hook
+  // e.g. "FriendStatus: Online"
+  useDebugValue(isOnline ? 'Online' : 'Offline');
+
+  return isOnline;
+}
+    </code></pre>
+  </section>
+</section>
+
+<section>
+  <h2>Libraries</h2>
+
+  <section>
+    <h3>react-spring</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+import {useSpring, animated} from 'react-spring'
+
+const [props, set, stop] = useSpring(() =&gt; ({ opacity: 1 }))
+
+// Update spring with new props
+set({ opacity: toggle ? 1 : 0 })
+// Stop animation
+stop()
+    </code></pre>
+  </section>
+</section>
+
+<section>
+  <h2>Questions?</h2>
+</section>
