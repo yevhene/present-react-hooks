@@ -63,9 +63,9 @@
   <section>
     <h2>Demo: suspense</h2>
 
-    <ul>
-      <li>Loading cascades</li>
-    </ul>
+    <div>
+      <i>Loading cascades</i>
+    </div>
   </section>
 </section>
 
@@ -85,10 +85,6 @@ const Loading = ({
   &lt;/Suspense&gt;
 );
     </code></pre>
-  </section>
-
-  <section>
-    <h2>Demo: suspense</h2>
   </section>
 
   <section>
@@ -141,6 +137,28 @@ export const REACT_SUSPENSE_TYPE = hasSymbol
   </section>
 
   <section>
+    <h3>react-cache (Homebrew)</h3>
+
+    <pre><code class="javascript" data-trim contenteditable>
+export function createResource(getPromise) {
+  const cache = {};
+  const load = (key) =&gt;
+    getPromise(key).then(value =&gt; cache[key] = value
+  );
+  return {
+    preload(key) {
+      if (!cache[key]) { load(key) }
+    },
+    read(key) {
+      if (!cache[key]) { throw load(key) }
+      return cache[key];
+    }
+  };
+};
+    </code></pre>
+  </section>
+
+  <section>
     <h3>read</h3>
 
     <pre><code class="javascript" data-trim contenteditable>
@@ -164,16 +182,6 @@ studentFetcher.preload(cache, id)
 
 // ...Later...
 const student = studentFetcher.read(id)
-    </code></pre>
-  </section>
-
-  <section>
-    <h2>React.lazy</h2>
-
-    <pre><code class="javascript" data-trim contenteditable>
-const OtherComponent = React.lazy(() =&gt;
-  import('./OtherComponent')
-);
     </code></pre>
   </section>
 </section>
@@ -213,20 +221,22 @@ const OtherComponent = React.lazy(() =&gt;
 </section>
 
 <section>
-  <h2>Server Side Rendering</h2>
+  <h2>Suspense (When?)</h2>
 
   <section>
-    <pre><code class="javascript" data-trim contenteditable>
-import { renderToNodeStream } from 'react-dom';
+    <h2>Code Fetching: Now</h2>
 
-app.get('/', (req, res) =&gt; {
-  const stream = renderToNodeStream(&lt;App /&gt;);
-  stream.pipe(res);
-  stream.on('finish', () =&gt; {
-    res.end();
-  });
-});
+    <pre><code class="javascript" data-trim contenteditable>
+const OtherComponent = React.lazy(() =&gt;
+  import('./OtherComponent')
+);
     </code></pre>
+  </section>
+
+  <section>
+    <h2>Data Fetching: Later</h2>
+
+    <img src="images/suspense-status.png" />
   </section>
 </section>
 
@@ -348,6 +358,8 @@ function Form() {
   useEffect(() =&gt; {
     fetchName().then(name =&gt; setName(name))
   }, []);
+
+  return &lt;JSX /&gt;;
 }
     </code></pre>
   </section>
@@ -437,21 +449,19 @@ function reducer(state, action) {
   switch (action.type) {
     case 'increment':
       return { count: state.count + 1 };
-    case 'decrement':
-      return { count: state.count - 1 };
     default:
       throw new Error();
   }
 }
+    </code></pre>
 
+    <pre><code class="javascript" data-trim contenteditable>
 function Counter({ initialCount }) {
-  const [state, dispatch] = useReducer(reducer, initialCount, init);
+  const [state, dispatch] = useReducer(reducer, initCount, init);
   return (
-    &lt;div&gt;
-      &lt;button onClick={() =&gt; dispatch({ type: 'increment' })}&gt;+&lt;/button&gt;
+    &lt;button onClick={() =&gt; dispatch({ type: 'increment' })}&gt;
       {state.count}
-      &lt;button onClick={() =&gt; dispatch({ type: 'decrement' })}&gt;-&lt;/button&gt;
-    &lt;/div&gt;
+    &lt;/button&gt;
   );
 }
     </code></pre>
@@ -544,6 +554,17 @@ set({ opacity: toggle ? 1 : 0 })
 stop()
     </code></pre>
   </section>
+</section>
+
+<section>
+  <h2>Future</h2>
+
+  <ul>
+    <li>new streaming server renderer</li>
+    <li>animations</li>
+    <li>new event system to control: hover, focus</li>
+    <li>prerender/commit</li>
+  </ul>
 </section>
 
 <section>
