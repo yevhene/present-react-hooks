@@ -9,15 +9,15 @@ function App() {
     a = useState(8);
     b = useState("Hello");
   } else {
-    b = useState();
-    a = useState();
+    b = useState(true);
+    a = useState(28);
   }
 
   return (
     <section>
-      <div>{a}</div>
+      <h1>{a}</h1>
       <button onClick={() => setToggle(!toggle)}>Toggle</button>
-      <div>{b}</div>
+      <h3>{b}</h3>
     </section>
   );
 }
